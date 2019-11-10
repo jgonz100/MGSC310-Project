@@ -5,7 +5,7 @@ Since 2008, guests and hosts have used Airbnb to expand on traveling possibiliti
 This data file includes all needed information to find out more about hosts, geographical availability, necessary metrics to make predictions and draw conclusions.
 
 # Acknowledgements
-This public dataset is part of Airbnb, and the original source can be found on this website.
+This public dataset is part of Airbnb, and the original source can be found on this website(http://insideairbnb.com/).
 
 # Inspiration
 What can we learn about different hosts and areas?
