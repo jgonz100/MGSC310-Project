@@ -1,5 +1,6 @@
 # Due Dates
 # November 12th 
+
 – Due: students must upload to Blackboard a compiled Rmarkdown document (and
 code and dataset that generates it) that includes example summary statistics from the dataset to be
 studied. This should include a summary table of means, max, mins and standard deviations; data
@@ -7,16 +8,19 @@ transformations performed for feature engineering, as well as at least five plot
 patterns to be studied. These must be motivated by the analysis – they cannot just be random plots.
 
 # November 19th 
+
 – Due: students must upload to Blackboard a compiled Rmarkdown document that
 shows one model(s) estimated against the data. Code and replication files are required.
 
 # Nov 21, Dec 3rd, Dec 5th: 
+
 - Due: a 10-15 minute presentation in class describing and motivating the
 question to be studied, summary statistics over the data, the baseline analysis, some robustness checks,
 as well as a conclusion. Students must send the professor your slides beforehand. I will send a sign-up
 sheet for your presentation slot later in the semester.
 
 # Friday of finals week @ 5pm: 
+
 - Final project code, replication files, dataset, and 4-8 page writeup
 describing your problem, motivating the problem, summary statistics, analysis, as well as results and
 conclusion. 
