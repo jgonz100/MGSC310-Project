@@ -65,6 +65,6 @@ min(nycAB$price[nycAB$neighbourhood_group=="Staten Island"])
 # The Bronx has the lowest average price as well as the lowest max price
 # Manhattan has the highest average price
 library(ggplot2)
-ggplot(nycAB,aes(x=neighbourhood_group, fill=neighbourhood_group)) + geom_density(alpha=0.25)
 # Summary from the means/max/min reflects in the boxplot
+# Have to use log transformed for best visualization
 ggplot(nycAB,aes(x=neighbourhood_group, y=log_price, fill=neighbourhood_group)) + geom_boxplot()
