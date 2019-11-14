@@ -21,6 +21,9 @@ sum(is.na(nycAB))
 
 # Check structure of data
 str(nycAB)
+nycAB$id = as.factor(nycAB$id)
+nycAB$host_id = as.factor(nycAB$host_id)
+str(nycAB)
 # Summary of data
 summary(nycAB)
 
@@ -31,6 +34,11 @@ hist(log1p(nycAB$price))
 hist((nycAB$price)^2)
 # Log looks much better so well add the log variable to the set
 nycAB$log_price = log1p(nycAB$price)
+# Remove outliers with log price > 7 and < 3
+nycAB = nycAB[!(nycAB$log_price < 3),]
+nycAB = nycAB[!(nycAB$log_price > 7),]
+hist(nycAB$log_price)
+
 
 hist(nycAB$number_of_reviews)
 # Skewed distribution as well
@@ -66,5 +74,20 @@ min(nycAB$price[nycAB$neighbourhood_group=="Staten Island"])
 # Manhattan has the highest average price
 library(ggplot2)
 # Summary from the means/max/min reflects in the boxplot
-# Have to use log transformed for best visualization
+# Have to use log transformed to get best visualization
 ggplot(nycAB,aes(x=neighbourhood_group, y=log_price, fill=neighbourhood_group)) + geom_boxplot()
+# We see that Manhattan has the higher price range compared to Queens and Staten Island, this
+# makes sense as Manhattan is more of a city/tourist/business area while Queens and Staten Island are
+# more residential areas, not sure about Bronx and Brooklyn.
+# Let's check the count of listings, this may influence the distributions.
+barplot(table(nycAB$neighbourhood_group))
+# We see that Brooklyn and Manhattan have far more listings than the other cities.
+
+
+# Lets check for correlations
+library(corrplot)
+corrplot(cor(nycAB[, c(5,6,8,9,10,12,13,14,15,16)]))
+# We see that count of host listings and number of days available per year have some positive correlation
+# with price, number of reviews and reviews per month shows some negative correlation but this may be
+# insignificant as there  is no way to distinguise between positive and negative reviews
+

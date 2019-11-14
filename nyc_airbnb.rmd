@@ -1,10 +1,105 @@
 ---
-title: "New York City AirBnB"
-author: "Team 6"
-date: "11/12/2019"
+title: "Predicting Listing Price of Airbnb in New York"
+author: "Ariana Bucio, Jadyn Gonzalez, Matt Mead, Bryce Viorst"
+date: "11/14/2019"
 output: pdf_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
+
+# Cleaning and summarizing the data
+
+We will be predicting the price of listings of Airbnbs found in several cities of New York.
+First we need to clean the data, run feature engineering, and visualize the data.
+
+- After importing the data we notice that there are columns of the names of the person who is listing their property. These variables will provide us no insight into price so we can drop these.
+```{r}
+setwd("~/Documents/MGSC310-Project-master")
+nycAB = read.csv("AB_NYC_2019.csv")
+nycAB = nycAB[ , !(names(nycAB) %in% c("name","host_name"))]
+```
+
+- The next step is to check for and handle missing values in the data.
+```{r}
+sapply(nycAB, function(x) sum(is.na(x)))
+```
+The data only contains missing values in the reviews per month variable. This can easily be handled by setting any missing value to 0.
+```{r}
+nycAB[is.na(nycAB)] = 0
+sum(is.na(nycAB))
+```
+
+- Now that that's done we can move on to re-formatting the variables if needed and feature engineering.
+```{r}
+str(nycAB)
+```
+Upon examining the structure of the data it looks like id and host id should be changed to factor variables.
+```{r}
+nycAB$id = as.factor(nycAB$id)
+nycAB$host_id = as.factor(nycAB$host_id)
+```
+If we are going to predict price we need to make sure the distribution is not skewed or else our predictions will not be accurate.
+```{r}
+hist(nycAB$price)
+```
+It appears that the price distribution is highly skewed, using a log transformation fixes this so well add the log of price to the data. We'll also remove the outliers where log price > 7 and < 3.
+```{r}
+hist(log1p(nycAB$price))
+nycAB$log_price = log1p(nycAB$price)
+nycAB = nycAB[!(nycAB$log_price < 3),]
+nycAB = nycAB[!(nycAB$log_price > 7),]
+hist(nycAB$log_price)
+```
+Checking the distribution of number of reviews also shows a skewed distribution that can be handled with a log transform. While this variable may not give us much insight as we cannot distinguish between positive and negative reviews, we'll add the log transform to the data anyway.
+```{r}
+hist(nycAB$number_of_reviews)
+hist(log1p(nycAB$number_of_reviews))
+nycAB$log_num_reviews = log1p(nycAB$number_of_reviews)
+```
+
+- Now we'll examine the price of listings in the various cities. First we need to check which cities contain listings.
+```{r}
+levels(nycAB$neighbourhood_group)
+```
+The data contains listings found in five cities of New York. Lets check averages, max, and mins of price in these cities.
+```{r}
+mean(nycAB$price[nycAB$neighbourhood_group=="Bronx"])
+max(nycAB$price[nycAB$neighbourhood_group=="Bronx"])
+min(nycAB$price[nycAB$neighbourhood_group=="Bronx"])
+
+mean(nycAB$price[nycAB$neighbourhood_group=="Brooklyn"])
+max(nycAB$price[nycAB$neighbourhood_group=="Brooklyn"])
+min(nycAB$price[nycAB$neighbourhood_group=="Brooklyn"])
+
+mean(nycAB$price[nycAB$neighbourhood_group=="Manhattan"])
+max(nycAB$price[nycAB$neighbourhood_group=="Manhattan"])
+min(nycAB$price[nycAB$neighbourhood_group=="Manhattan"])
+
+mean(nycAB$price[nycAB$neighbourhood_group=="Queens"])
+max(nycAB$price[nycAB$neighbourhood_group=="Queens"])
+min(nycAB$price[nycAB$neighbourhood_group=="Queens"])
+
+mean(nycAB$price[nycAB$neighbourhood_group=="Staten Island"])
+max(nycAB$price[nycAB$neighbourhood_group=="Staten Island"])
+min(nycAB$price[nycAB$neighbourhood_group=="Staten Island"])
+```
+We can see that the Bronx has the lowest average price while Manhattan has the highest. Manhattan is known for being a business and tourist area which explains the higher price of listings.
+Lets use a boxplot to visualize the distrubutions of each city.
+```{r}
+library(ggplot2)
+ggplot(nycAB,aes(x=neighbourhood_group, y=log_price, fill=neighbourhood_group)) + geom_boxplot()
+```
+The plot confirms the values calculated above, but we'll also check the number of listings found in each city as it's possible that it may be affecting the averages.
+```{r}
+barplot(table(nycAB$neighbourhood_group))
+```
+From this we can see that the listings in Manhattan and Brooklyn far outnumber the listings in the other cities.
+
+- Now we'll see how the variables correlate with price
+```{r}
+library(corrplot)
+corrplot(cor(nycAB[, c(5,6,8,9,10,12,13,14,15,16)]))
+```
+We see that count of host listings and number of days available per year have some positive correlation with price, number of reviews and reviews per month shows some negative correlation but this may be insignificant as there  is no way to distinguise between positive and negative reviews.
