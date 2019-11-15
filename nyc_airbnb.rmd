@@ -12,13 +12,14 @@ knitr::opts_chunk$set(echo = TRUE)
 # Cleaning and summarizing the data
 
 We will be predicting the price of listings of Airbnbs found in several cities of New York.
-First we need to clean the data, run feature engineering, and visualize the data.
+First we need to clean the data, then run feature engineering, and lastly visualize the data.
 
-- After importing the data we notice that there are columns of the names of the person who is listing their property. These variables will provide us no insight into price so we can drop these.
+- After importing the data, we notice that there are columns of the names of the people who are listing their properties as well as the names of the Airbnb listings. These variables will provide us no insight into price so we can drop these. The longitude and latitude variables are also irrevelant since we will not be doing geospatial visualization. Last review and id were also dropped due to no relationship with price.
+
 ```{r}
 setwd("~/Documents/MGSC310-Project-master")
 nycAB = read.csv("AB_NYC_2019.csv")
-nycAB = nycAB[ , !(names(nycAB) %in% c("name","host_name"))]
+nycAB = nycAB[ , !(names(nycAB) %in% c("name","id","host_name", "latitude", "longitude", "last_review", "calculated_host_listings_count"))]
 ```
 
 - The next step is to check for and handle missing values in the data.
@@ -31,20 +32,20 @@ nycAB[is.na(nycAB)] = 0
 sum(is.na(nycAB))
 ```
 
-- Now that that's done we can move on to re-formatting the variables if needed and feature engineering.
+- Now that that's done we can move on to re-formatting the variables (if needed) and feature engineering.
 ```{r}
 str(nycAB)
 ```
-Upon examining the structure of the data it looks like id and host id should be changed to factor variables.
+Upon examining the structure of the data, it looks like id and host id should be changed to factor variables.
 ```{r}
 nycAB$id = as.factor(nycAB$id)
 nycAB$host_id = as.factor(nycAB$host_id)
 ```
-If we are going to predict price we need to make sure the distribution is not skewed or else our predictions will not be accurate.
+If we are going to predict price, we need to make sure the distribution is not skewed or else our predictions will be inaccurate.
 ```{r}
 hist(nycAB$price)
 ```
-It appears that the price distribution is highly skewed, using a log transformation fixes this so well add the log of price to the data. We'll also remove the outliers where log price > 7 and < 3.
+It appears that the price distribution is highly skewed. Using a log transformation fixes this, so we'll add the log of price to the data. We'll also remove the outliers where log price > 7 and < 3.
 ```{r}
 hist(log1p(nycAB$price))
 nycAB$log_price = log1p(nycAB$price)
@@ -52,14 +53,25 @@ nycAB = nycAB[!(nycAB$log_price < 3),]
 nycAB = nycAB[!(nycAB$log_price > 7),]
 hist(nycAB$log_price)
 ```
-Checking the distribution of number of reviews also shows a skewed distribution that can be handled with a log transform. While this variable may not give us much insight as we cannot distinguish between positive and negative reviews, we'll add the log transform to the data anyway.
+Checking the distribution of number of reviews also shows skewness that can be handled with a log transformation. While this variable may not give us much insight as we cannot distinguish between positive and negative reviews, we'll add the log transformation of this variable to the data anyway.
 ```{r}
 hist(nycAB$number_of_reviews)
 hist(log1p(nycAB$number_of_reviews))
 nycAB$log_num_reviews = log1p(nycAB$number_of_reviews)
 ```
+We compared log and squared transformation of variables reviews_per_month and minimum nights, and found that log transformation works best. We created log versions of these two variables as well.
+```{r}
+par(mfrow=c(1,2))
+hist(log(nycAB$reviews_per_month))
+hist((nycAB$reviews_per_month)^2)
+nycAB$reviews_per_month_log = log1p(nycAB$reviews_per_month)
 
-- Now we'll examine the price of listings in the various cities. First we need to check which cities contain listings.
+par(mfrow=c(1,2))
+hist(log(nycAB$minimum_nights))
+hist((nycAB$minimum_nights)^2)
+nycAB$minimum_nights_log = log1p(nycAB$minimum_nights)
+```
+- Now we'll examine the price of listings in the various cities. First, we need to check which cities contain listings.
 ```{r}
 levels(nycAB$neighbourhood_group)
 ```
@@ -85,7 +97,7 @@ mean(nycAB$price[nycAB$neighbourhood_group=="Staten Island"])
 max(nycAB$price[nycAB$neighbourhood_group=="Staten Island"])
 min(nycAB$price[nycAB$neighbourhood_group=="Staten Island"])
 ```
-We can see that the Bronx has the lowest average price while Manhattan has the highest. Manhattan is known for being a business and tourist area which explains the higher price of listings.
+We can see that the Bronx has the lowest average price while Manhattan has the highest. Manhattan is known for being a business and tourist area, which explains the higher price of listings.
 Lets use a boxplot to visualize the distrubutions of each city.
 ```{r}
 library(ggplot2)
@@ -97,9 +109,31 @@ barplot(table(nycAB$neighbourhood_group))
 ```
 From this we can see that the listings in Manhattan and Brooklyn far outnumber the listings in the other cities.
 
-- Now we'll see how the variables correlate with price
+- Now we'll see how the variables correlate with price.
 ```{r}
 library(corrplot)
-corrplot(cor(nycAB[, c(5,6,8,9,10,12,13,14,15,16)]))
+corrplot(cor(nycAB[, c(6,7,8,9,10,11,12,13)]))
 ```
-We see that count of host listings and number of days available per year have some positive correlation with price, number of reviews and reviews per month shows some negative correlation but this may be insignificant as there  is no way to distinguise between positive and negative reviews.
+We see that count of host listings and number of days available per year have some positive correlation with price. Number of reviews and reviews per month show some negative correlation, but this may be insignificant as there is no way to distinguish between positive and negative reviews.
+
+The following plots reveal other points of analysis.
+
+```{r}
+ggplot(nycAB,aes(x=room_type, y=log_price, fill = room_type)) + geom_boxplot()
+ # We can see that listings where the entire home/apartment
+ #is offered generally has the highest price range, whereas
+ #a private room has the second highest price range,
+ #with a shared room falling in the lowest price range
+
+ ggplot(nycAB,aes(x=minimum_nights, y=reviews_per_month)) + geom_point() + geom_smooth(size = .5)
+ #This plot shows a relationship between minimum nights and 
+ #reviews per month. It shows that there is a negative 
+ #relationship up to a certain point (as minimum nights increases,
+ #reviews per month decreases) and then it begins to even out, 
+ #as there is little to no relationship between the two after
+ #a certain point
+
+ ggplot(nycAB,aes(x=minimum_nights_log, y=reviews_per_month_log)) + geom_point() + geom_smooth(size = .5)
+ #this plot shows the relationship a between the two variables
+ #a bit more cleanly, as we have found the log of both.
+```
