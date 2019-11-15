@@ -1,16 +1,17 @@
-# Add your name to this file
+# Ariana Bucio
 # Jadyn Gonzalez
-
+# Matt Mead
+# Bryce Viorst
 
 
 ######################
-# Nov. 12, Submission#
+# Nov. 14, Submission#
 ######################
 # Setting working directory and importing data
 setwd("~/Documents/MGSC310-Project-master")
 nycAB = read.csv("AB_NYC_2019.csv")
 # Dropping name and host name as these variables will not provide any insights
-nycAB = nycAB[ , !(names(nycAB) %in% c("name","host_name"))]
+nycAB = nycAB[ , !(names(nycAB) %in% c("name","id","host_name", "latitude", "longitude", "last_review", "calculated_host_listings_count"))]
 
 # Check for missing values
 sapply(nycAB, function(x) sum(is.na(x)))
@@ -21,7 +22,6 @@ sum(is.na(nycAB))
 
 # Check structure of data
 str(nycAB)
-nycAB$id = as.factor(nycAB$id)
 nycAB$host_id = as.factor(nycAB$host_id)
 str(nycAB)
 # Summary of data
@@ -46,6 +46,17 @@ hist(log1p(nycAB$number_of_reviews))
 hist((nycAB$number_of_reviews)^2)
 # Again log distribution is much better so we'll add that
 nycAB$log_num_reviews = log1p(nycAB$number_of_reviews)
+
+par(mfrow=c(1,2))
+hist(log(nycAB$reviews_per_month))
+hist((nycAB$reviews_per_month)^2)
+nycAB$reviews_per_month_log = log1p(nycAB$reviews_per_month)
+
+par(mfrow=c(1,2))
+hist(log(nycAB$minimum_nights))
+hist((nycAB$minimum_nights)^2)
+#Log looks better, so let's use that.
+nycAB$minimum_nights_log = log1p(nycAB$minimum_nights)
 
 # Investigate listings on the neighborhood groups
 levels(nycAB$neighbourhood_group)
@@ -86,8 +97,27 @@ barplot(table(nycAB$neighbourhood_group))
 
 # Lets check for correlations
 library(corrplot)
-corrplot(cor(nycAB[, c(5,6,8,9,10,12,13,14,15,16)]))
+corrplot(cor(nycAB[, c(6,7,8,9,10,11,12,13)]))
 # We see that count of host listings and number of days available per year have some positive correlation
 # with price, number of reviews and reviews per month shows some negative correlation but this may be
 # insignificant as there  is no way to distinguise between positive and negative reviews
+
+ggplot(nycAB,aes(x=room_type, y=log_price, fill = room_type)) + geom_boxplot()
+# We can see that listings where the entire home/apartment
+#is offered generally has the highest price range, whereas
+#a private room has the second highest price range,
+#with a shared room falling in the lowest price range
+
+ggplot(nycAB,aes(x=minimum_nights, y=reviews_per_month)) + geom_point() + geom_smooth(size = .5)
+#This plot shows a relationship between minimum nights and 
+#reviews per month. It shows that there is a negative 
+#relationship up to a certain point (as minimum nights increases,
+#reviews per month decreases) and then it begins to even out, 
+#as there is little to no relationship between the two after
+#a certain point
+
+ggplot(nycAB,aes(x=minimum_nights_log, y=reviews_per_month_log)) + geom_point() + geom_smooth(size = .5)
+#this plot shows the relationship a between the two variables
+#a bit more cleanly, as we have found the log of both.
+
 
