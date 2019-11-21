@@ -120,4 +120,84 @@ ggplot(nycAB,aes(x=minimum_nights_log, y=reviews_per_month_log)) + geom_point() 
 #this plot shows the relationship a between the two variables
 #a bit more cleanly, as we have found the log of both.
 
+###########################
+### Nov. 21, Submission ###
+###########################
+
+# We'll run a regression model using a decision tree
+# First we'll set the seed and split the data
+set.seed(310)
+trainidx = sample(1:nrow(nycAB),size=0.75*nrow(nycAB))
+train = nycAB[trainidx,]
+test = nycAB[-trainidx,]
+
+# Next well run two tree models, one with price and one with the log transform price
+library(tree)
+regMod = tree(price ~ neighbourhood_group + room_type 
+              + minimum_nights + number_of_reviews + reviews_per_month_log
+              + availability_365 + log_num_reviews + reviews_per_month_log 
+              + minimum_nights_log,
+              data = train)
+
+logMod = tree(log_price ~ neighbourhood_group + room_type 
+              + minimum_nights + number_of_reviews + reviews_per_month_log
+              + availability_365 + log_num_reviews + reviews_per_month_log 
+              + minimum_nights_log,
+              data = train)
+
+# We'll plot both
+plot(regMod)
+text(regMod, pretty=0)
+
+plot(logMod)
+text(logMod, pretty = 0)
+
+# In both trees we can see that the variable that affects price the most is room type,
+# more specifically if the room type is the whole house or not. The next most important node 
+# for both trees is neighbourhood_group, if it is Manhattan or not. The model using log_price only
+# gives these nodes. The model using the given price variable includes a node if the room is the 
+# whole house and is in manhattan it looks at availability.
+
+# We'll use cross-validation to find the best tree size for both models.
+cvTreeR = cv.tree(regMod)
+cvTreeR
+bestIdx = which.min(cvTreeR$dev)
+cvTreeR$size[bestIdx]
+# Best size is 5
+
+cvTreeL = cv.tree(logMod)
+cvTreeL
+bestIdx = which.min(cvTreeL$dev)
+cvTreeL$size[bestIdx]
+# Best size is 4
+
+# Now we'll prune the trees using the best size we got from CV and generate predictions
+prunedTreeR = prune.tree(regMod, best = 5)
+predsTrainR = predict(prunedTreeR)
+predsTestR = predict(prunedTreeR, newdata = test)
+
+prunedTreeL = prune.tree(logMod, best = 4)
+predsTrainL = predict(prunedTreeL)
+predsTestL = predict(prunedTreeL, newdata = test)
+
+# Now we'll calculate MSE for both models
+MSE = function(p,t){
+  mean((t-p)^2)
+}
+
+MSE(predsTrainR, train$price) #9975.12
+MSE(predsTestR,test$price) #9570.264
+
+MSE(predsTrainL, train$log_price) #0.231
+MSE(predsTestL, test$log_price) #0.228
+
+# MSE is much lower when we use the log transformation
+# we do get a lower MSE in the test set which may be an indication that 
+# the model is overfitting the data.
+plot(prunedTreeL)
+text(prunedTreeL, pretty = 0)
+
+
+
+
 
