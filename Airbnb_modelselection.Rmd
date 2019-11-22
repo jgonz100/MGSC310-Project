@@ -1,3 +1,15 @@
+---
+title: "Airbnb Model Selection"
+author: "Ariana Bucio"
+date: "11/21/2019"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
 # Ariana Bucio
 # Jadyn Gonzalez
 # Matt Mead
@@ -119,7 +131,9 @@ ggplot(nycAB,aes(x=minimum_nights, y=reviews_per_month)) + geom_point() + geom_s
 ggplot(nycAB,aes(x=minimum_nights_log, y=reviews_per_month_log)) + geom_point() + geom_smooth(size = .5)
 #this plot shows the relationship a between the two variables
 #a bit more cleanly, as we have found the log of both.
+```
 
+```{r}
 ###########################
 ### Nov. 21, Submission ###
 ###########################
@@ -232,6 +246,5 @@ MSE(preds_bag_nycAB, train$log_price)
 #.1948749
 
 #Random forest model has lowest error, so we will use this one. 
-
-
+```
 
