@@ -2,10 +2,11 @@
 #install.packages("glmnetUtils")
 #install.packages("tree")
 #install.packages("randomForest")
-
+#install.packages("ggplot2")
 library(glmnet)
 library(glmnetUtils)
 
+options(scipen = 999)
 setwd("~/Desktop/MGSC310-Project-master")
 nycAB <-  read.csv("AB_NYC_2019.csv")
 
@@ -25,11 +26,8 @@ nycAB$minimum_nights_log <-  log1p(nycAB$minimum_nights)
 #for efficiency, take a sample of 30 percent 
 sample_idx <- sample(1:nrow(nycAB), size = floor(0.3*nrow(nycAB)))
 nycAB <- nycAB[sample_idx,]
-#remove these variables; we don't need them
-nycAB <- subset(nycAB, select = c(price, log_price, neighbourhood_group, number_of_reviews,
-                                  log_num_reviews, minimum_nights, minimum_nights_log,
-                                  reviews_per_month, reviews_per_month_log, room_type,
-                                  availability_365))
+
+
 #convert "neighbourhood_group" & "room_type" to numerical factors
 #NOTE: Bronx == 1, Brookyln == 2, Manhattan == 3, Queens == 4, Staten Island == 5
 #NOTE: Entire home/apt == 1, Private room == 2, Shared room == 3
@@ -43,52 +41,54 @@ AB_train <- nycAB[train_idx,]
 AB_test <- nycAB[-train_idx,]
 
 #run linear model using price (ARIANA)
-AB_lm1 <- lm(price ~ ., AB_train)
-summary(AB_lm1)
+#AB_lm1 <- lm(price ~ ., AB_train)
+#summary(AB_lm1)
 
-lm1_trainpreds <- predict(AB_lm1)
-lm1_testpreds <- predict(AB_lm1, newdata = AB_test)
+#lm1_trainpreds <- predict(AB_lm1)
+#lm1_testpreds <- predict(AB_lm1, newdata = AB_test)
 
-MSE <- function(p,t){
-  mean((t-p)^2)
-}
+#MSE <- function(p,t){
+  #mean((t-p)^2)
+#}
 
-MSE_lm1train <- MSE(lm1_trainpreds, AB_train$price)
-MSE_lm1test <- MSE(lm1_testpreds, AB_test$price)
+#MSE_lm1train <- MSE(lm1_trainpreds, AB_train$price)
+#MSE_lm1test <- MSE(lm1_testpreds, AB_test$price)
 
-df.1 <- data.frame(MSE_train_LM1 = as.matrix(MSE_lm1train),
-                   MSE_test_LM1 = as.matrix(MSE_lm1test)) 
-df.1
+#df.1 <- data.frame(MSE_train_LM1 = as.matrix(MSE_lm1train),
+                   #MSE_test_LM1 = as.matrix(MSE_lm1test)) 
+#df.1
 
 #run linear model using log_price (ARIANA)
-AB_lm2 <- lm(log_price ~ ., AB_train)
-summary(AB_lm2)
+#AB_lm2 <- lm(log_price ~ ., AB_train)
+#summary(AB_lm2)
 
-lm2_trainpreds <- predict(AB_lm2)
-lm2_testpreds <- predict(AB_lm2, newdata = AB_test)
+#lm2_trainpreds <- predict(AB_lm2)
+#lm2_testpreds <- predict(AB_lm2, newdata = AB_test)
 
-MSE <- function(p,t){
-  mean((t-p)^2)
-}
+#MSE <- function(p,t){
+  #mean((t-p)^2)
+#}
 
-MSE_lm2train <- MSE(lm2_trainpreds, AB_train$log_price)
-MSE_lm2test <- MSE(lm2_testpreds, AB_test$log_price)
+#MSE_lm2train <- MSE(lm2_trainpreds, AB_train$log_price)
+#MSE_lm2test <- MSE(lm2_testpreds, AB_test$log_price)
 
-df.2 <- data.frame(MSE_train_LM2 = as.matrix(MSE_lm2train),
-                   MSE_test_LM2 = as.matrix(MSE_lm2test)) 
-df.2
+#df.2 <- data.frame(MSE_train_LM2 = as.matrix(MSE_lm2train),
+                   #MSE_test_LM2 = as.matrix(MSE_lm2test)) 
+#df.2
 
 #run lasso model using price (ARIANA)
-AB_lasso1 <- cv.glmnet(price ~ ., data = AB_train, alpha = 1)
+lasso1_train_subset <- subset(AB_train, select = -c(log_price, neighbourhood))
+lasso1_test_subset <- subset(AB_test, select = -c(log_price, neighbourhood))
+AB_lasso1 <- cv.glmnet(price ~ ., data = lasso1_train_subset, alpha = 1)
 
 #finding the best lambda
 best_lambda1 <- AB_lasso1$lambda.min
 best_lambda1
 
 #retrain lasso model & make predictions
-lasso_best1 <- glmnet(price ~ ., data = AB_train, alpha = 1, lambda = best_lambda1)
-lasso1_trainpreds <- predict(lasso_best1, newdata = AB_train)
-lasso1_testpreds <- predict(lasso_best1, s = best_lambda1, newdata = AB_test)
+lasso_best1 <- glmnet(price ~ ., data = lasso1_train_subset, alpha = 1, lambda = best_lambda1)
+lasso1_trainpreds <- predict(lasso_best1, newdata = lasso1_train_subset)
+lasso1_testpreds <- predict(lasso_best1, s = best_lambda1, newdata = lasso1_test_subset)
 
 MSE <- function(p,t){
   mean((t-p)^2)
@@ -105,16 +105,18 @@ df.3
 coef(lasso_best1)
 
 #run lasso model using log_price (ARIANA)
-AB_lasso2 <- cv.glmnet(log_price ~ ., data = AB_train, alpha = 1)
+lasso2_train_subset <- subset(AB_train, select = -c(price, neighbourhood))
+lasso2_test_subset <- subset(AB_test, select = -c(price, neighbourhood))
+AB_lasso2 <- cv.glmnet(log_price ~ ., data = lasso2_train_subset, alpha = 1)
 
 #finding the best lambda
 best_lambda2 <- AB_lasso2$lambda.min
 best_lambda2
 
 #retrain lasso model & make predictions
-lasso_best2 <- glmnet(log_price ~ ., data = AB_train, alpha = 1, lambda = best_lambda2)
-lasso2_trainpreds <- predict(lasso_best2, newdata = AB_train)
-lasso2_testpreds <- predict(lasso_best2, s = best_lambda1, newdata = AB_test)
+lasso_best2 <- glmnet(log_price ~ ., data = lasso2_train_subset, alpha = 1, lambda = best_lambda2)
+lasso2_trainpreds <- predict(lasso_best2, newdata = lasso2_train_subset)
+lasso2_testpreds <- predict(lasso_best2, s = best_lambda1, newdata = lasso2_test_subset)
 
 MSE <- function(p,t){
   mean((t-p)^2)
@@ -129,6 +131,14 @@ df.4
 
 #finding the important coefficients
 coef(lasso_best2)
+
+true_test <- AB_test$price
+resids <- (true_test - lasso1_testpreds)
+
+true_testlog <- AB_test$log_price
+residslog <- (true_testlog - lasso2_testpreds)
+
+plot(lasso2_testpreds, AB_test$log_price)
 
 
 #run a decision tree using price (JADYN)
