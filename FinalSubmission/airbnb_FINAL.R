@@ -133,8 +133,8 @@ lasso2_testpreds <- predict(lasso_best2, s = best_lambda1, newdata = lasso2_test
 RMSE_lasso2train <- exp(RMSE(lasso2_trainpreds,AB_train$log_price))
 RMSE_lasso2test <- exp(RMSE(lasso2_testpreds, AB_test$log_price))
 
-df.4 <- data.frame(RMSE_train_LASSO2 = as.matrix(MSE_lasso2train),
-                   RMSE_test_LASSO2 = as.matrix(MSE_lasso2test))
+df.4 <- data.frame(RMSE_train_LASSO2 = as.matrix(RMSE_lasso2train),
+                   RMSE_test_LASSO2 = as.matrix(RMSE_lasso2test))
 df.4
 
 #finding the important coefficients
