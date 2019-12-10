@@ -98,8 +98,8 @@ RMSE <- function(p,t){
 RMSE_lasso1train <- RMSE(lasso1_trainpreds,AB_train$price)
 RMSE_lasso1test <- RMSE(lasso1_testpreds, AB_test$price)
 
-df.3 <- data.frame(RMSE_train_LASSO1 = as.matrix(MSE_lasso1train),
-                   RMSE_test_LASSO1 = as.matrix(MSE_lasso1test))
+df.3 <- data.frame(RMSE_train_LASSO1 = as.matrix(RMSE_lasso1train),
+                   RMSE_test_LASSO1 = as.matrix(RMSE_lasso1test))
 df.3
 
 #finding the important coefficients
