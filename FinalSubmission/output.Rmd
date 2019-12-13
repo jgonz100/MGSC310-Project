@@ -96,8 +96,9 @@ df.3
 ```{r echo = FALSE}
 #finding the important coefficients
 coef(lasso_best1)
-colors <- c("black", "red")
+
 #plotting
+colors <- c("black", "red")
 plot(AB_test$price, lasso1_testpreds, main = "Lasso Model (Price)",
      xlab = "Price", ylab = "Test predictions", col = colors)
 legend("topright", legend = c("Price", "Test predictions"),
@@ -146,6 +147,7 @@ df.4
 ```{r}
 #finding the important coefficients
 coef(lasso_best2)
+
 #plotting
 plot(AB_test$log_price, lasso2_testpreds, main = "Lasso Model (Log Price)",
      xlab = "Log Price", ylab = "Test predictions", col = colors)
@@ -237,9 +239,9 @@ exp(RMSE(predsTestL, AB_test$log_price)) #1.5792
 The output for the random forest model.
 
 ```{r echo = FALSE}
-set.seed(2019) #run the model with the set.seed!
+set.seed(2019) #run the model with the set.seed
 #setting mtry to 5 as cross-validated best number
-#maxnodes == 160  and ntree == 500 to minimize MSE while still optimizing efficiency
+#maxnodes == 160  and ntree == 500 to minimize RMSE while still optimizing efficiency
 bag_nycAB <- randomForest(log_price ~ neighbourhood_group + room_type 
                           + availability_365 + log_num_reviews + reviews_per_month_log 
                           + minimum_nights_log,
@@ -248,12 +250,42 @@ bag_nycAB <- randomForest(log_price ~ neighbourhood_group + room_type
                           maxnodes = 160,
                           ntree = 500,
                           importance = TRUE)
+
+library(forecast)
+#generating residuals for test and train
+residual_train <- AB_train$log_price - preds_bag_nycAB
+residual_test <- AB_test$log_price - preds_bag_nycAB_test
+
+#plotting residuals against predicted values from training set 
+#this plot is heteroskedatic, as the variance in error term is non-constant throughout 
+ggplot(mod3_train_df,aes(x=pred_train,y=resids_train)) + geom_point(alpha=0.5) + geom_smooth(color="red")
+ggplot(mod3_test_df,aes(x=pred_test,y=resids_test)) + geom_point(alpha=0.5) + geom_smooth(color="red")
+
+#generating importance plot
 bag_nycAB
+importance(bag_nycAB)
+varImpPlot(bag_nycAB)
 
 #prediction of train data
 preds_bag_nycAB <- predict(bag_nycAB, newdata = AB_train)
 #prediction of test data
 preds_bag_nycAB_test<- predict(bag_nycAB, newdata = AB_test)
+
+#creating data frame of residuals and predicted values
+mod3_train_df <- data.frame(
+  resids_train <- residual_train,
+  pred_train <- preds_bag_nycAB)
+
+mod3_test_df <- data.frame(
+  resids_test<- residual_test,
+  pred_test <- preds_bag_nycAB_test)
+
+plot(preds_bag_nycAB, AB_train$log_price)
+abline(0,1,col="red")
+plot(preds_bag_nycAB_test, AB_test$log_price)
+abline(0,1,col="red")
+
+#random forest model has lowest error, so we will use this one
 ```
 
 We compared RMSE and found that random forest showed the best results.
