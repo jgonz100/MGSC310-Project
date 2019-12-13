@@ -151,8 +151,12 @@ legend("topright", legend = c("Test predictions", "Residuals"),
        fill = colors, cex = 0.38)
 
 compare.df <- data.frame(LogPricePreds = as.matrix(lasso2_testpreds),
-                         LogPrice = as.matrix(AB_test$log_price))
-head(compare.df) #how is our log lasso model performing against actual log(price) values?
+                         LogPrice = as.matrix(AB_test$log_price),
+                         PricePreds = as.matrix(lasso1_testpreds),
+                         Price = as.matrix(AB_test$price))
+                          
+head(compare.df) #how is our regular & log lasso model performing against actual price & log(price) values?
+#LogPricePreds = X1 & PricePreds = X1.1
 
 #run a decision tree using price 
 library(tree)
