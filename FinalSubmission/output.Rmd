@@ -70,7 +70,7 @@ best_lambda1
 best_lambda1
 ```
 
-Once we found lambda, we re-trained the model then found the RMSE and generated our plots.
+Once we found lambda, we re-trained the model, found the RMSE, and then generated our plots.
 
 ```{r include = FALSE}
 #retrain lasso model & make predictions
@@ -109,7 +109,7 @@ legend("topright", legend = c("Test predictions", "Residuals"),
        fill = colors, cex = 0.38)
 ```
 
-Now we did the same steps using the log of price as the output variable.
+Now we followed the same steps using the log of price as the output variable.
 
 ```{r include = FALSE}
 
@@ -156,12 +156,16 @@ plot(lasso2_testpreds, lasso2_resids, main = "Lasso Model (Log Price)",
      xlab = "Test predictions", ylab = "Residuals", col = colors)
 legend("topright", legend = c("Test predictions", "Residuals"),
        fill = colors, cex = 0.38)
-
-compare.df <- data.frame(LogPricePreds = as.matrix(lasso2_testpreds),
-                         LogPrice = as.matrix(AB_test$log_price))
-head(compare.df) #how is our log lasso model performing against actual log(price) values?
 ```
+We wanted to compare predictions of both price and log(price) against actual values of price and log(price). We stored our results in a dataframe.
 
+```{r}
+compare.df <- data.frame(LogPricePreds = as.matrix(lasso2_testpreds),
+                         LogPrice = as.matrix(AB_test$log_price),
+                         PricePreds = as.matrix(lasso1_testpreds),
+                         Price = as.matrix(AB_test$price))
+head(compare.df)
+```
 Our second model choice was a decision tree.
 
 ```{r include = FALSE}
