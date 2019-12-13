@@ -3,6 +3,8 @@
 #install.packages("tree")
 #install.packages("randomForest")
 #install.packages("ggplot2")
+#install.packages("forecast")
+
 library(glmnet)
 library(glmnetUtils)
 library(ggplot2)
@@ -104,8 +106,9 @@ df.3
 
 #finding the important coefficients
 coef(lasso_best1)
-colors <- c("black", "red")
+
 #plotting
+colors <- c("black", "red")
 plot(AB_test$price, lasso1_testpreds, main = "Lasso Model (Price)",
      xlab = "Price", ylab = "Test predictions", col = colors)
 legend("topright", legend = c("Price", "Test predictions"),
@@ -139,6 +142,7 @@ df.4
 
 #finding the important coefficients
 coef(lasso_best2)
+
 #plotting
 plot(AB_test$log_price, lasso2_testpreds, main = "Lasso Model (Log Price)",
      xlab = "Log Price", ylab = "Test predictions", col = colors)
@@ -150,13 +154,14 @@ plot(lasso2_testpreds, lasso2_resids, main = "Lasso Model (Log Price)",
 legend("topright", legend = c("Test predictions", "Residuals"),
        fill = colors, cex = 0.38)
 
+#compare results of preds against true values for price & log_price
+#LogPricePreds = X1 & PricePreds = X1.1
 compare.df <- data.frame(LogPricePreds = as.matrix(lasso2_testpreds),
                          LogPrice = as.matrix(AB_test$log_price),
                          PricePreds = as.matrix(lasso1_testpreds),
                          Price = as.matrix(AB_test$price))
                           
-head(compare.df) #how is our regular & log lasso model performing against actual price & log(price) values?
-#LogPricePreds = X1 & PricePreds = X1.1
+head(compare.df) 
 
 #run a decision tree using price 
 library(tree)
@@ -191,7 +196,7 @@ bestIdx = which.min(cvTreeL$dev)
 cvTreeL$size[bestIdx]
 #best size is 4
 
-#since we have our best tree sizes, we can prune each tree and generate predictions
+#since we have our best tree sizes, we can prune each tree & generate predictions
 prunedTreeR = prune.tree(regMod, best = 5)
 predsTrainR = predict(prunedTreeR)
 predsTestR = predict(prunedTreeR, newdata = AB_test)
@@ -208,15 +213,15 @@ RMSE(predsTestR, AB_test$price) #94.24316
 exp(RMSE(predsTrainL, AB_train$log_price)) #1.596223
 exp(RMSE(predsTestL, AB_test$log_price)) #1.5792
 
-#The RMSE is much lower when we use the log transformation.
-#We do get a lower RMSE in the test set which may be an indication that 
-#the model is overfitting the data.
+#the RMSE is much lower when we use the log transformation
+#we do get a lower RMSE in the test set which may be an indication that 
+#the model is overfitting the data
 
-#run a RF model using log_price 
+#run a RF model using log_price only
 library(randomForest)
-set.seed(2019) #run the model with the set.seed!
+set.seed(2019) #run the model with the set.seed
 #setting mtry to 5 as cross-validated best number
-#maxnodes == 160  and ntree == 500 to minimize MSE while still optimizing efficiency
+#maxnodes == 160  and ntree == 500 to minimize RMSE while still optimizing efficiency
 bag_nycAB <- randomForest(log_price ~ neighbourhood_group + room_type 
                           + availability_365 + log_num_reviews + reviews_per_month_log 
                           + minimum_nights_log,
@@ -225,19 +230,49 @@ bag_nycAB <- randomForest(log_price ~ neighbourhood_group + room_type
                           maxnodes = 160,
                           ntree = 500,
                           importance = TRUE)
+
+library(forecast)
+#generating residuals for test and train
+residual_train <- AB_train$log_price - preds_bag_nycAB
+residual_test <- AB_test$log_price - preds_bag_nycAB_test
+
+#plotting residuals against predicted values from training set 
+#this plot is heteroskedatic, as the variance in error term is non-constant throughout 
+ggplot(mod3_train_df,aes(x=pred_train,y=resids_train)) + geom_point(alpha=0.5) + geom_smooth(color="red")
+ggplot(mod3_test_df,aes(x=pred_test,y=resids_test)) + geom_point(alpha=0.5) + geom_smooth(color="red")
+
+#generating importance plot
 bag_nycAB
+importance(bag_nycAB)
+varImpPlot(bag_nycAB)
 
 #prediction of train data
 preds_bag_nycAB <- predict(bag_nycAB, newdata = AB_train)
 #prediction of test data
 preds_bag_nycAB_test<- predict(bag_nycAB, newdata = AB_test)
 
-#MSE test
-exp(RMSE(preds_bag_nycAB_test, AB_test$log_price))
+#creating data frame of residuals and predicted values
+mod3_train_df <- data.frame(
+  resids_train <- residual_train,
+  pred_train <- preds_bag_nycAB)
+
+mod3_test_df <- data.frame(
+  resids_test<- residual_test,
+  pred_test <- preds_bag_nycAB_test)
+
+plot(preds_bag_nycAB, AB_train$log_price)
+abline(0,1,col="red")
+plot(preds_bag_nycAB_test, AB_test$log_price)
+abline(0,1,col="red")
+
+#RMSE test (log_price)
+RMSE_test <- exp(RMSE(preds_bag_nycAB_test, AB_test$log_price))
+RMSE_test
 #1.544338
 
-#MSE train
-exp(RMSE(preds_bag_nycAB, AB_train$log_price))
+#RMSE train (log_price)
+RMSE_train <- exp(RMSE(preds_bag_nycAB, AB_train$log_price))
+RMSE_train
 #1.498392
 
-#Random forest model has lowest error, so we will use this one
+#random forest model has lowest error, so we will use this one
